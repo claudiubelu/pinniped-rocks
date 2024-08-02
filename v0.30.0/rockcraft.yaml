@@ -1,0 +1,47 @@
+name: pinniped-server
+summary: pinniped ROCK image.
+description: >
+  This rock is a drop in replacement for the
+  ghcr.io/vmware-tanzu/pinniped/pinniped-server:v0.30.0 image.
+version: v0.30.0
+license: Apache-2.0
+
+base: ubuntu@24.04
+build-base: ubuntu@24.04
+platforms:
+  amd64:
+
+entrypoint-service: pinniped
+services:
+  pinniped:
+    command: /usr/local/bin/pinniped-server [ -h ]
+    override: replace
+    startup: enabled
+
+parts:
+  build-deps:
+    plugin: nil
+    build-snaps:
+      - go/1.22/stable
+
+  pinniped:
+    after: [build-deps]
+    plugin: go
+    source-type: git
+    source: https://github.com/vmware-tanzu/pinniped
+    source-tag: v0.30.0
+    source-depth: 1
+    override-build: |
+      export CGO_ENABLED=0
+
+      mkdir -p $CRAFT_PART_INSTALL/usr/local/bin
+
+      go build -v -trimpath -ldflags "$(hack/get-ldflags.sh) -w -s" \
+        -o $CRAFT_PART_INSTALL/usr/local/bin/pinniped-concierge-kube-cert-agent \
+        ./cmd/pinniped-concierge-kube-cert-agent/...
+      go build -v -trimpath -ldflags "$(hack/get-ldflags.sh) -w -s" \
+        -o $CRAFT_PART_INSTALL/usr/local/bin/pinniped-server ./cmd/pinniped-server/...
+
+      ln -sf /usr/local/bin/pinniped-server $CRAFT_PART_INSTALL/usr/local/bin/pinniped-concierge
+      ln -sf /usr/local/bin/pinniped-server $CRAFT_PART_INSTALL/usr/local/bin/pinniped-supervisor
+      ln -sf /usr/local/bin/pinniped-server $CRAFT_PART_INSTALL/usr/local/bin/local-user-authenticator
