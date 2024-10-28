@@ -41,3 +41,21 @@ def test_pinniped(function_instance: harness.Instance, version: str):
     k8s_util.wait_for_deployment(
         function_instance, "pinniped-supervisor", constants.K8S_NS_KUBE_SYSTEM
     )
+
+    for name in ["pinniped-concierge", "pinniped-supervisor"]:
+        # Sanity check: make sure there isn't an error in Pebble that it couldn't start the service.
+        process = function_instance.exec(
+            [
+                "k8s",
+                "kubectl",
+                "logs",
+                "-n",
+                constants.K8S_NS_KUBE_SYSTEM,
+                f"{constants.K8S_DEPLOYMENT}/{name}",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        assert '(Start service "pinniped") failed' not in process.stdout
