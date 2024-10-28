@@ -33,4 +33,4 @@ def test_pinniped(version: str):
     assert EXPECTED_HELPSTR in docker_run.stdout
 
     # check rock filesystem
-    docker_util.ensure_image_contains_paths(rock.image, EXPECTED_FILES)
+    docker_util.ensure_image_contains_paths_bare(rock.image, EXPECTED_FILES)
